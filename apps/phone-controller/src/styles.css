@@ -1,0 +1,266 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  color: #fff8e6;
+  background: #15120f;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(155deg, rgba(29, 150, 132, 0.32), transparent 42%),
+    linear-gradient(20deg, rgba(237, 119, 74, 0.28), transparent 45%),
+    #15120f;
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(255, 248, 230, 0.18);
+  border-radius: 8px;
+  color: #fff8e6;
+  background: rgba(255, 248, 230, 0.08);
+}
+
+button:disabled {
+  opacity: 0.42;
+}
+
+.phone-shell {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  gap: 14px;
+  min-height: 100vh;
+  padding: 18px;
+  transition: background-color 120ms ease;
+}
+
+.phone-shell.feedback {
+  background: rgba(243, 199, 102, 0.28);
+}
+
+.phone-top,
+.status-pill,
+.capability,
+.controls,
+.segmented,
+.bottom-bar,
+.bottom-bar dl {
+  display: flex;
+  align-items: center;
+}
+
+.phone-top {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #f3c766;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 18vw, 4.8rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.status-pill {
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(124, 215, 200, 0.36);
+  border-radius: 999px;
+  color: #7cd7c8;
+  background: rgba(15, 31, 28, 0.68);
+}
+
+.join-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 248, 230, 0.14);
+  border-radius: 8px;
+  background: rgba(21, 18, 15, 0.7);
+}
+
+label {
+  display: grid;
+  gap: 7px;
+}
+
+label span,
+dt {
+  color: rgba(255, 248, 230, 0.62);
+  font-size: 0.75rem;
+}
+
+input {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid rgba(255, 248, 230, 0.18);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #fff8e6;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 58px;
+  width: 100%;
+  font-weight: 850;
+  background: #1d9684;
+}
+
+.primary-action.enable {
+  min-height: 74px;
+  background: #dd5b3f;
+}
+
+.capability-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.capability {
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  border: 1px solid rgba(255, 248, 230, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 248, 230, 0.56);
+  background: rgba(255, 248, 230, 0.05);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.capability.ok {
+  color: #7cd7c8;
+  border-color: rgba(124, 215, 200, 0.34);
+}
+
+.controls {
+  gap: 10px;
+}
+
+.segmented {
+  flex: 1;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(255, 248, 230, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.segmented button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+}
+
+.segmented button.selected {
+  color: #15120f;
+  background: #f3c766;
+}
+
+.touch-zone {
+  display: grid;
+  place-items: center;
+  min-height: 48vh;
+  border: 2px solid rgba(255, 248, 230, 0.22);
+  border-radius: 8px;
+  color: #fff8e6;
+  background:
+    linear-gradient(145deg, rgba(29, 150, 132, 0.52), rgba(221, 91, 63, 0.42)),
+    rgba(255, 248, 230, 0.06);
+  touch-action: none;
+  user-select: none;
+}
+
+.touch-zone.active {
+  border-color: #f3c766;
+  background:
+    linear-gradient(145deg, rgba(243, 199, 102, 0.72), rgba(29, 150, 132, 0.62)),
+    rgba(255, 248, 230, 0.08);
+}
+
+.touch-zone span {
+  font-size: clamp(3rem, 22vw, 7rem);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.bottom-bar {
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 248, 230, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.bottom-bar button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.bottom-bar dl {
+  flex: 1;
+  justify-content: space-around;
+  gap: 8px;
+  margin: 0;
+}
+
+dd {
+  margin: 2px 0 0;
+  color: #fff8e6;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.message-line {
+  min-height: 20px;
+  margin: 0;
+  color: rgba(255, 248, 230, 0.72);
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .phone-shell {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .capability span,
+  .segmented span {
+    display: none;
+  }
+}

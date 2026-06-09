@@ -1,0 +1,25 @@
+{
+  "name": "kindo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,desktop,phone -c green,cyan,magenta \"pnpm --filter @kindo/room-server dev\" \"pnpm --filter @kindo/desktop-console dev\" \"pnpm --filter @kindo/phone-controller dev\"",
+    "dev:server": "pnpm --filter @kindo/room-server dev",
+    "dev:desktop": "pnpm --filter @kindo/desktop-console dev",
+    "dev:phone": "pnpm --filter @kindo/phone-controller dev",
+    "build": "pnpm -r --sort build",
+    "typecheck": "pnpm -r --sort typecheck",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "concurrently": "^10.0.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
