@@ -11,7 +11,7 @@ import type { ControllerCapabilities, ControllerPacket, GripMode, Handedness, Ki
 import { KindoSocketClient, type TransportStatus } from "@kindo/transport";
 import { Activity, Hand, Power, Radio, RotateCcw, Smartphone, Vibrate } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BrowserSensorSampler } from "../sensors/browserSensors.js";
+import { BrowserSensorSampler, type SpatialTrackingStatus } from "../sensors/browserSensors.js";
 import { getRoomIdFromLocation, getRoomServerUrl } from "./config.js";
 
 type JoinedState = {
@@ -41,20 +41,23 @@ export function PhoneControllerApp() {
   const [grip, setGrip] = useState<GripMode>("landscape");
   const [seq, setSeq] = useState(0);
   const [neutralRequestId, setNeutralRequestId] = useState(0);
+  const [spatialTracking, setSpatialTracking] = useState<SpatialTrackingStatus>(() => samplerRefSingleton.getSpatialTrackingStatus());
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState(false);
 
   const clientRef = useRef<KindoSocketClient | null>(null);
-  const samplerRef = useRef(new BrowserSensorSampler());
+  const samplerRef = useRef(samplerRefSingleton);
   const wakeLockRef = useRef<WakeLockHandle | null>(null);
   const touchRef = useRef<TouchState>({ primary: false, secondary: false });
   const lastSentAtRef = useRef<number | null>(null);
+  const lastSpatialUiAtRef = useRef(0);
   const seqRef = useRef(0);
   const neutralRequestIdRef = useRef(0);
 
   const canStream = Boolean(joined && enabled);
 
   const connect = useCallback(() => {
+    blurEditingTargets();
     if (!roomId) {
       setMessage("Enter a room code");
       return;
@@ -95,6 +98,7 @@ export function PhoneControllerApp() {
       return;
     }
     localStorage.setItem(sessionStorageKey(joined.roomId), joined.sessionToken);
+    blurEditingTargets();
   }, [joined]);
 
   useEffect(() => {
@@ -115,6 +119,12 @@ export function PhoneControllerApp() {
       lastSentAtRef.current = sentAtMs;
       setSeq(nextSeq);
 
+      const snapshot = samplerRef.current.getSnapshot();
+      if (sentAtMs - lastSpatialUiAtRef.current > 500) {
+        lastSpatialUiAtRef.current = sentAtMs;
+        setSpatialTracking(snapshot.spatialTracking);
+      }
+
       const packetInput: Parameters<typeof createPacket>[0] = {
         roomId: joined.roomId,
         playerId: joined.playerId,
@@ -126,7 +136,7 @@ export function PhoneControllerApp() {
         grip,
         active: touchRef.current.primary,
         neutralRequestId: neutralRequestIdRef.current,
-        snapshot: samplerRef.current.getSnapshot(),
+        snapshot,
       };
       if (lastSentAt !== null) {
         packetInput.dtMs = sentAtMs - lastSentAt;
@@ -146,16 +156,24 @@ export function PhoneControllerApp() {
   }, [canStream, caps, grip, handedness, joined]);
 
   const enableMotion = useCallback(async () => {
+    blurEditingTargets();
     const permissionResult = await requestMotionPermissions();
     setPermission(permissionResult);
     samplerRef.current.start();
-    setCaps(detectControllerCapabilities());
+    const spatialStatus = await samplerRef.current.startSpatialTracking();
+    setSpatialTracking(spatialStatus);
+    const detectedCaps = detectControllerCapabilities();
+    setCaps({
+      ...detectedCaps,
+      vio: detectedCaps.vio && spatialStatus.state !== "unavailable",
+    });
     wakeLockRef.current = await requestScreenWakeLock();
     setEnabled(true);
-    setMessage(permissionResult.errors[0] ?? "Motion enabled");
+    setMessage(permissionResult.errors[0] ?? (spatialStatus.state === "unavailable" ? `Motion enabled; ${spatialStatus.message}` : "Motion + VIO enabled"));
   }, []);
 
   const updateTouch = useCallback((event: React.PointerEvent<HTMLDivElement>, primary: boolean) => {
+    blurEditingTargets();
     const rect = event.currentTarget.getBoundingClientRect();
     const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
     const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
@@ -171,10 +189,13 @@ export function PhoneControllerApp() {
   }, []);
 
   const requestNeutralPose = useCallback(() => {
+    blurEditingTargets();
     const nextRequestId = neutralRequestIdRef.current + 1;
     neutralRequestIdRef.current = nextRequestId;
     setNeutralRequestId(nextRequestId);
-    setMessage("Neutral reset sent");
+    const spatialReset = samplerRef.current.resetSpatialOrigin();
+    setSpatialTracking(samplerRef.current.getSpatialTrackingStatus());
+    setMessage(spatialReset ? "Neutral + 6DOF origin reset sent" : "Neutral reset sent");
   }, []);
 
   return (
@@ -210,6 +231,7 @@ export function PhoneControllerApp() {
           <section className="capability-strip">
             <Capability icon={<Activity size={17} />} label="Motion" enabled={caps.motion} />
             <Capability icon={<Smartphone size={17} />} label="Orient" enabled={caps.orientation} />
+            <Capability icon={<Activity size={17} />} label="6DOF" enabled={spatialTracking.state === "normal"} />
             <Capability icon={<Vibrate size={17} />} label="Haptics" enabled={caps.vibration} />
             <Capability icon={<Power size={17} />} label="Wake" enabled={caps.wakeLock} />
           </section>
@@ -276,6 +298,10 @@ export function PhoneControllerApp() {
               <div>
                 <dt>Motion</dt>
                 <dd>{permission?.motion ?? "prompt"}</dd>
+              </div>
+              <div>
+                <dt>6DOF</dt>
+                <dd>{formatSpatialStatus(spatialTracking)}</dd>
               </div>
               <div>
                 <dt>Neutral</dt>
@@ -385,10 +411,14 @@ const createPacket = (input: {
   if (input.neutralRequestId > 0) {
     packet.control.calibration = {
       neutralPoseRequestId: input.neutralRequestId,
+      spatialOriginRequestId: input.neutralRequestId,
     };
   }
   if (input.snapshot.orientation) {
     packet.pose = input.snapshot.orientation;
+  }
+  if (input.snapshot.pose6d) {
+    packet.pose6d = input.snapshot.pose6d;
   }
   if (input.snapshot.motion) {
     packet.motion = input.snapshot.motion;
@@ -398,6 +428,31 @@ const createPacket = (input: {
 };
 
 const sessionStorageKey = (roomId: string): string => `kindo:${roomId}:session`;
+
+const samplerRefSingleton = new BrowserSensorSampler();
+
+const blurEditingTargets = (): void => {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement) {
+    active.blur();
+  }
+  window.getSelection()?.removeAllRanges();
+};
+
+const formatSpatialStatus = (status: SpatialTrackingStatus): string => {
+  switch (status.state) {
+    case "normal":
+      return "normal";
+    case "initializing":
+      return "init";
+    case "limited":
+      return "limited";
+    case "lost":
+      return "lost";
+    case "unavailable":
+      return "off";
+  }
+};
 
 const flashFeedback = (setFeedback: (feedback: boolean) => void): void => {
   setFeedback(true);

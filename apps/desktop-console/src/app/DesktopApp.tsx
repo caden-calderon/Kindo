@@ -77,13 +77,14 @@ export function DesktopApp() {
                 <div className="cap-row">
                   <CapabilityDot label="motion" enabled={controller.summary.caps?.motion ?? false} />
                   <CapabilityDot label="orientation" enabled={controller.summary.caps?.orientation ?? false} />
+                  <CapabilityDot label="6dof" enabled={controller.lastPacket?.pose6d?.trackingState === "normal"} />
                   <CapabilityDot label="haptics" enabled={controller.summary.caps?.vibration ?? false} />
                 </div>
                 <dl className="stats-grid">
                   <Stat label="Packets" value={controller.packetCount.toString()} />
                   <Stat label="Rate" value={`${controller.packetRateHz.toFixed(1)} Hz`} />
                   <Stat label="Seq" value={`${controller.lastPacket?.seq ?? "--"}`} />
-                  <Stat label="Phase" value={controller.debug?.phase ?? "idle"} />
+                  <Stat label="6DOF" value={controller.lastPacket?.pose6d?.trackingState ?? "off"} />
                 </dl>
                 <div className="row-actions">
                   <button type="button" title="Reset orientation" disabled={!controller.lastPacket?.pose} onClick={() => room.resetOrientation(controller.summary.playerId)}>
@@ -151,6 +152,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function PacketReadout({ packet }: { packet: ControllerPacket | undefined }) {
   const pose = packet?.pose;
+  const pose6d = packet?.pose6d;
   const motion = packet?.motion;
   return (
     <dl className="packet-grid">
@@ -163,6 +165,9 @@ function PacketReadout({ packet }: { packet: ControllerPacket | undefined }) {
       <Stat label="Touch" value={packet?.touch.primary ? "held" : "open"} />
       <Stat label="State" value={packet?.control.state ?? "--"} />
       <Stat label="Grip" value={packet?.control.grip ?? "--"} />
+      <Stat label="6DOF" value={pose6d?.trackingState ?? "--"} />
+      <Stat label="Position" value={formatVec(pose6d?.positionM)} />
+      <Stat label="Pose Src" value={pose6d?.source ?? "--"} />
     </dl>
   );
 }

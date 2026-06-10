@@ -4,6 +4,7 @@ import {
   identityQuaternion,
   invertQuaternion,
   multiplyQuaternions,
+  rotateVec3ByQuaternion,
   type QuaternionTuple,
 } from "../src/index.js";
 
@@ -18,6 +19,14 @@ describe("quaternion helpers", () => {
     const rotation = axisAngleToQuaternion([1, 0, 0], -Math.PI / 4);
     expectQuaternionClose(multiplyQuaternions(identityQuaternion(), rotation), rotation);
     expectQuaternionClose(multiplyQuaternions(rotation, identityQuaternion()), rotation);
+  });
+
+  it("rotates vectors with a quaternion", () => {
+    const rotation = axisAngleToQuaternion([0, 0, 1], Math.PI / 2);
+    const result = rotateVec3ByQuaternion([1, 0, 0], rotation);
+    expect(result[0]).toBeCloseTo(0, 5);
+    expect(result[1]).toBeCloseTo(1, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
   });
 });
 

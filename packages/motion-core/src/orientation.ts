@@ -47,6 +47,22 @@ export const axisAngleToQuaternion = (axis: Vec3, angleRadians: number): Quatern
   return normalizeQuaternion([x * scale, y * scale, z * scale, Math.cos(halfAngle)]);
 };
 
+export const rotateVec3ByQuaternion = (value: Vec3, quat: QuaternionTuple): Vec3 => {
+  const [x, y, z, w] = normalizeQuaternion(quat);
+  const [vx, vy, vz] = value;
+  const uvx = y * vz - z * vy;
+  const uvy = z * vx - x * vz;
+  const uvz = x * vy - y * vx;
+  const uuvx = y * uvz - z * uvy;
+  const uuvy = z * uvx - x * uvz;
+  const uuvz = x * uvy - y * uvx;
+  return [
+    vx + 2 * (w * uvx + uuvx),
+    vy + 2 * (w * uvy + uuvy),
+    vz + 2 * (w * uvz + uuvz),
+  ];
+};
+
 export const eulerDegreesToQuaternion = (euler: Vec3): QuaternionTuple => {
   const [yawDeg, pitchDeg, rollDeg] = euler;
   const yaw = degreesToRadians(yawDeg);

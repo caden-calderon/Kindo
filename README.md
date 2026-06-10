@@ -87,6 +87,30 @@ Recommended options:
 
 If the phone app is loaded over HTTPS, the WebSocket URL must be `wss://`, not `ws://`, or the browser will block it as mixed content.
 
+## 6DOF / VIO Tracking
+
+Kindo now treats spatial tracking as a first-class packet path. Controllers can send an optional `pose6d` alongside the existing IMU packet data:
+
+```txt
+positionM      x/y/z position in meters relative to the tracking origin
+quaternion     phone orientation
+source         webxr, arkit, arcore, marker, native, or simulated
+trackingState  unavailable, initializing, normal, limited, or lost
+referenceSpace local, local-floor, viewer, or kindo-room
+```
+
+The current web controller attempts WebXR `immersive-ar` tracking from the `Enable Motion` tap when the browser exposes it. If unavailable, it reports that honestly and keeps streaming IMU fallback packets.
+
+For iPhone, the production-quality 6DOF route is likely a thin native ARKit controller app or wrapper that streams the same `pose6d` shape over the room WebSocket. iOS Safari does not currently give us dependable browser access to ARKit VIO.
+
+The reset button now also rebases the spatial origin when a 6DOF pose is active. Gameplay calibration should still happen in the real play grip, not flat on a table.
+
+## iOS Shake To Undo
+
+Web content cannot globally disable iOS Shake to Undo. Native UIKit apps can disable it with `applicationSupportsShakeToEdit`, and users can disable it in iOS Accessibility settings.
+
+The web controller mitigates it by blurring active text inputs after joining, enabling motion, touching the play zone, and resetting calibration. This keeps normal play out of text-editing mode, which is where the undo prompt usually appears.
+
 ## Cloudflare Plan
 
 `playkindo.dev` is the project domain. The clean development tunnel layout is:
@@ -173,10 +197,11 @@ VITE_ROOM_SERVER_URL=wss://ws.playkindo.dev
 3. Phone user taps `Enable Motion`.
 4. Phone requests motion/orientation permission, attempts wake lock, and starts streaming packets.
 5. Phone defaults to the `Paddle` grip, meaning landscape/sideways hold with the screen acting as the racket or paddle face.
-6. Tap the phone reset button, or the desktop reset button, while holding the comfortable neutral pose to recenter the preview.
-7. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, and calibrated Babylon phone orientation.
-8. Desktop can send a vibration command. Unsupported devices flash visually instead.
-9. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
+6. The phone attempts 6DOF/VIO tracking where browser support exists and otherwise reports IMU fallback.
+7. Tap the phone reset button, or the desktop reset button, while holding the comfortable neutral pose to recenter the preview and spatial origin.
+8. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, tracking state, and calibrated Babylon phone orientation.
+9. Desktop can send a vibration command. Unsupported devices flash visually instead.
+10. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
 
 ## Environment Variables
 
@@ -203,4 +228,4 @@ pnpm test
 pnpm build
 ```
 
-The test suite covers protocol validation, replay serialization, fixed timestep behavior, orientation calibration, bowling recognizer emission, and WebSocket room creation/join/packet relay.
+The test suite covers protocol validation, 6DOF packet relay, replay serialization, fixed timestep behavior, orientation calibration, bowling recognizer emission, and WebSocket room creation/join/packet relay.

@@ -47,6 +47,14 @@ describe("room server", () => {
       sentAtMs: 100,
       caps: defaultControllerCapabilities(),
       pose: { alpha: 1, beta: 2, gamma: 3 },
+      pose6d: {
+        positionM: [0.2, 0.3, -0.4],
+        quaternion: [0, 0, 0, 1],
+        source: "webxr",
+        trackingState: "normal",
+        referenceSpace: "local",
+        frameId: 4,
+      },
       touch: { primary: false, secondary: false },
       control: {
         handedness: "right",
@@ -68,6 +76,8 @@ describe("room server", () => {
     expect(relayed.type).toBe("controller_packet");
     if (relayed.type === "controller_packet") {
       expect(relayed.packet.seq).toBe(1);
+      expect(relayed.packet.pose6d?.trackingState).toBe("normal");
+      expect(relayed.packet.pose6d?.positionM).toEqual([0.2, 0.3, -0.4]);
     }
 
     desktop.close();

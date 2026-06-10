@@ -50,8 +50,9 @@ export class MotionQualityTracker {
       };
     }
 
-    const hasMotion = Boolean(sample.acceleration || sample.accelerationIncludingGravity || sample.rotationRateDeg);
+    const hasMotion = Boolean(sample.acceleration || sample.accelerationIncludingGravity || sample.rotationRateDeg || sample.spatialPose);
     const hasOrientation = Boolean(sample.orientation);
+    const hasSpatialPose = Boolean(sample.spatialPose);
     if (!hasMotion) {
       warnings.push("motion_unavailable");
     }
@@ -71,13 +72,14 @@ export class MotionQualityTracker {
     }
 
     const sampleRateHz = averageInterval === undefined ? undefined : 1000 / averageInterval;
-    const availabilityScore = (hasMotion ? 0.4 : 0) + (hasOrientation ? 0.4 : 0);
+    const availabilityScore = (hasMotion ? 0.35 : 0) + (hasOrientation ? 0.3 : 0) + (hasSpatialPose ? 0.25 : 0);
     const freshnessScore = sampleAge <= this.staleAfterMs ? 0.1 : 0;
     const jitterScore = jitterMs === undefined || jitterMs <= this.expectedSampleMs ? 0.1 : 0;
 
     const quality: MotionQuality = {
       hasMotion,
       hasOrientation,
+      hasSpatialPose,
       confidence: clamp01(availabilityScore + freshnessScore + jitterScore),
       warnings,
     };

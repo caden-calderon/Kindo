@@ -18,11 +18,38 @@ export const ControllerCapabilitiesSchema = z.object({
   vibration: z.boolean(),
   wakeLock: z.boolean(),
   genericSensor: z.boolean(),
+  camera: z.boolean().default(false),
+  webxr: z.boolean().default(false),
+  vio: z.boolean().default(false),
 });
 export type ControllerCapabilities = z.infer<typeof ControllerCapabilitiesSchema>;
 
 const finiteNumber = z.number().finite();
+const confidenceNumber = z.number().finite().min(0).max(1);
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
+const quaternionSchema = z.tuple([finiteNumber, finiteNumber, finiteNumber, finiteNumber]);
+
+export const SpatialTrackingStateSchema = z.enum(["unavailable", "initializing", "normal", "limited", "lost"]);
+export type SpatialTrackingState = z.infer<typeof SpatialTrackingStateSchema>;
+
+export const SpatialPoseSourceSchema = z.enum(["webxr", "arkit", "arcore", "marker", "native", "simulated"]);
+export type SpatialPoseSource = z.infer<typeof SpatialPoseSourceSchema>;
+
+export const ReferenceSpaceSchema = z.enum(["local", "local-floor", "viewer", "kindo-room"]);
+export type ReferenceSpace = z.infer<typeof ReferenceSpaceSchema>;
+
+export const SpatialPoseSchema = z.object({
+  positionM: vector3Schema,
+  quaternion: quaternionSchema,
+  linearVelocityMps: vector3Schema.optional(),
+  angularVelocityDps: vector3Schema.optional(),
+  source: SpatialPoseSourceSchema,
+  trackingState: SpatialTrackingStateSchema,
+  confidence: confidenceNumber.optional(),
+  referenceSpace: ReferenceSpaceSchema.optional(),
+  frameId: z.number().int().nonnegative().optional(),
+});
+export type SpatialPose = z.infer<typeof SpatialPoseSchema>;
 
 export const ControllerPacketSchema = z.object({
   roomId: z.string().min(3),
@@ -40,6 +67,7 @@ export const ControllerPacketSchema = z.object({
       absolute: z.boolean().optional(),
     })
     .optional(),
+  pose6d: SpatialPoseSchema.optional(),
   motion: z
     .object({
       acc: vector3Schema.optional(),
@@ -62,6 +90,7 @@ export const ControllerPacketSchema = z.object({
     calibration: z
       .object({
         neutralPoseRequestId: z.number().int().nonnegative().optional(),
+        spatialOriginRequestId: z.number().int().nonnegative().optional(),
       })
       .optional(),
   }),
@@ -82,4 +111,7 @@ export const defaultControllerCapabilities = (): ControllerCapabilities => ({
   vibration: false,
   wakeLock: false,
   genericSensor: false,
+  camera: false,
+  webxr: false,
+  vio: false,
 });

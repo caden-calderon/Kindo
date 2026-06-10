@@ -6,6 +6,9 @@ export const detectControllerCapabilities = (targetWindow: Window = window): Con
   vibration: "vibrate" in targetWindow.navigator,
   wakeLock: "wakeLock" in targetWindow.navigator,
   genericSensor: "Accelerometer" in targetWindow || "Gyroscope" in targetWindow,
+  camera: Boolean(targetWindow.navigator.mediaDevices?.getUserMedia),
+  webxr: "xr" in targetWindow.navigator,
+  vio: "xr" in targetWindow.navigator,
 });
 
 export const getDeviceInfo = (navigatorRef: Navigator = navigator): DeviceInfo => ({

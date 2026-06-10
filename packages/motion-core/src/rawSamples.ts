@@ -16,11 +16,13 @@ export type RawMotionSample = {
   accelerationIncludingGravity?: Vec3;
   rotationRateDeg?: Vec3;
   intervalMs?: number;
+  spatialPose?: ControllerPacket["pose6d"];
 };
 
 export type MotionQuality = {
   hasMotion: boolean;
   hasOrientation: boolean;
+  hasSpatialPose?: boolean;
   sampleRateHz?: number;
   jitterMs?: number;
   droppedPacketEstimate?: number;
@@ -35,6 +37,7 @@ export type MotionFrame = {
   angularVelocityDeg?: Vec3;
   acceleration?: Vec3;
   accelerationIncludingGravity?: Vec3;
+  spatialPose?: ControllerPacket["pose6d"];
   quality: MotionQuality;
 };
 
@@ -80,6 +83,10 @@ export const rawSampleFromPacket = (packet: ControllerPacket): RawMotionSample =
     }
   }
 
+  if (packet.pose6d) {
+    sample.spatialPose = packet.pose6d;
+  }
+
   return sample;
 };
 
@@ -109,6 +116,10 @@ export const motionFrameFromRawSample = (sample: RawMotionSample, quality: Motio
 
   if (sample.accelerationIncludingGravity) {
     frame.accelerationIncludingGravity = sample.accelerationIncludingGravity;
+  }
+
+  if (sample.spatialPose) {
+    frame.spatialPose = sample.spatialPose;
   }
 
   return frame;
