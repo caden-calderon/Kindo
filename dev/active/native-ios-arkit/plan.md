@@ -19,9 +19,11 @@ Add the first native iPhone controller path for true 6DOF tracking. The app shou
 - Rebase ARKit transforms on reset so packets use `referenceSpace: "kindo-room"`.
 - Send `pose6d.source: "arkit"`, `caps.vio: true`, and omit velocity until we have a measured derivative path.
 - Include an XcodeGen `project.yml` so Caden can generate a real Xcode project on macOS without us committing brittle hand-authored `.xcodeproj` files.
+- Add a GitHub Actions hosted macOS unsigned build workflow so we can catch native compile errors even without a local Mac.
 
 ## Non-Goals
 
 - No native game UI.
 - No App Store packaging.
+- No signed IPA/TestFlight pipeline until Apple signing credentials exist.
 - No marker tracking, shared AR maps, or multiplayer spatial alignment yet.

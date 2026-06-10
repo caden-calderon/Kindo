@@ -1,0 +1,42 @@
+name: iOS Controller
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ios-controller.yml"
+      - "native/ios-controller/**"
+  pull_request:
+    paths:
+      - ".github/workflows/ios-controller.yml"
+      - "native/ios-controller/**"
+  workflow_dispatch:
+
+jobs:
+  unsigned-build:
+    name: Generate and build unsigned app
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: native/ios-controller
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Test Swift protocol package
+        run: swift test
+
+      - name: Build iOS app without signing
+        run: |
+          xcodebuild \
+            -project KindoIOSController.xcodeproj \
+            -scheme KindoIOSController \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
