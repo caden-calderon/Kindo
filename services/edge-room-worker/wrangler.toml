@@ -1,0 +1,12 @@
+name = "kindo-room-worker"
+main = "src/index.ts"
+compatibility_date = "2026-06-09"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "ROOM_HUB"
+class_name = "RoomHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomHub"]

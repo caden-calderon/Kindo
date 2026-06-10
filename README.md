@@ -117,7 +117,54 @@ desktop + controller static assets -> Cloudflare Pages or Workers assets
 room coordination/WebSockets       -> Cloudflare Worker + Durable Object per room
 ```
 
-The static apps and room server are intentionally separate today so Stage 0 can keep the Node `ws` implementation easy to debug before moving room coordination into a Durable Object.
+The static apps and room server are intentionally separate. The repo includes two room servers:
+
+- `services/room-server`: local Node `ws` server for fast debugging.
+- `services/edge-room-worker`: Cloudflare Worker + Durable Object server for `wss://ws.playkindo.dev`.
+
+### Deploy `ws.playkindo.dev`
+
+Log in once:
+
+```bash
+pnpm --filter @kindo/edge-room-worker exec wrangler login
+```
+
+Deploy:
+
+```bash
+pnpm deploy:edge
+```
+
+In Cloudflare, attach the Worker to a custom domain:
+
+```txt
+Workers & Pages
+-> kindo-room-worker
+-> Settings
+-> Domains & Routes
+-> Add
+-> Custom domain
+-> ws.playkindo.dev
+```
+
+After that, verify:
+
+```bash
+curl https://ws.playkindo.dev/health
+```
+
+It should return:
+
+```json
+{"ok":true,"edge":true}
+```
+
+Then make sure both Pages projects use:
+
+```txt
+VITE_ROOM_SERVER_URL=wss://ws.playkindo.dev
+```
 
 ## Controller Flow
 
