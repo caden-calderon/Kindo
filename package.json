@@ -13,7 +13,7 @@
     "dev:edge": "pnpm --filter @kindo/edge-room-worker dev",
     "dev:desktop": "pnpm --filter @kindo/desktop-console dev",
     "dev:phone": "pnpm --filter @kindo/phone-controller dev",
-    "deploy:edge": "pnpm --filter @kindo/edge-room-worker deploy",
+    "deploy:edge": "pnpm --filter @kindo/edge-room-worker run deploy",
     "build": "pnpm -r --sort build",
     "typecheck": "pnpm -r --sort typecheck",
     "test": "vitest run"
