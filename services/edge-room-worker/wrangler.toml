@@ -3,6 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2026-06-09"
 workers_dev = true
 
+[[routes]]
+pattern = "ws.playkindo.dev"
+custom_domain = true
+
 [[durable_objects.bindings]]
 name = "ROOM_HUB"
 class_name = "RoomHub"
