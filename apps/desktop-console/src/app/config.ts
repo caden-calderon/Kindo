@@ -1,9 +1,9 @@
-import { getDefaultPhoneControllerUrl, getDefaultRoomServerUrl } from "@kindo/transport";
+import { getDefaultPhoneControllerUrl, getDefaultRoomServerUrl, normalizeConfiguredUrl } from "@kindo/transport";
 
-export const getRoomServerUrl = (): string => import.meta.env.VITE_ROOM_SERVER_URL ?? getDefaultRoomServerUrl();
+export const getRoomServerUrl = (): string => normalizeConfiguredUrl(import.meta.env.VITE_ROOM_SERVER_URL) ?? getDefaultRoomServerUrl();
 
 export const getPhoneJoinUrl = (roomId: string): string => {
-  const configured = import.meta.env.VITE_PHONE_CONTROLLER_URL as string | undefined;
+  const configured = normalizeConfiguredUrl(import.meta.env.VITE_PHONE_CONTROLLER_URL);
   if (configured) {
     return `${configured.replace(/\/$/, "")}/join/${roomId}`;
   }
