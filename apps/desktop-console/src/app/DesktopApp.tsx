@@ -1,4 +1,4 @@
-import { Activity, Download, Play, Radio, RefreshCw, Smartphone, Square, Vibrate } from "lucide-react";
+import { Activity, Download, Play, Radio, RefreshCw, RotateCcw, Smartphone, Square, Vibrate } from "lucide-react";
 import QRCode from "qrcode";
 import type { ControllerPacket } from "@kindo/protocol";
 import { useEffect, useMemo, useState } from "react";
@@ -51,10 +51,13 @@ export function DesktopApp() {
         </div>
 
         <div className="preview-panel">
-          <PhoneOrientationPreview packet={room.activePacket} />
+          <PhoneOrientationPreview packet={room.activePacket} calibration={room.activeCalibration} />
           <div className="preview-overlay">
             <Smartphone size={18} />
             <span>{primaryController?.summary.name ?? "No controller"}</span>
+            <button type="button" title="Reset orientation" disabled={!primaryController?.lastPacket?.pose} onClick={() => room.resetOrientation(primaryController?.summary.playerId)}>
+              <RotateCcw size={16} />
+            </button>
           </div>
         </div>
 
@@ -83,6 +86,9 @@ export function DesktopApp() {
                   <Stat label="Phase" value={controller.debug?.phase ?? "idle"} />
                 </dl>
                 <div className="row-actions">
+                  <button type="button" title="Reset orientation" disabled={!controller.lastPacket?.pose} onClick={() => room.resetOrientation(controller.summary.playerId)}>
+                    <RotateCcw size={18} />
+                  </button>
                   <button type="button" title="Send vibration" onClick={() => room.sendVibrate(controller.summary.playerId)}>
                     <Vibrate size={18} />
                   </button>
@@ -156,6 +162,7 @@ function PacketReadout({ packet }: { packet: ControllerPacket | undefined }) {
       <Stat label="Accel+G" value={formatVec(motion?.accG)} />
       <Stat label="Touch" value={packet?.touch.primary ? "held" : "open"} />
       <Stat label="State" value={packet?.control.state ?? "--"} />
+      <Stat label="Grip" value={packet?.control.grip ?? "--"} />
     </dl>
   );
 }

@@ -172,9 +172,11 @@ VITE_ROOM_SERVER_URL=wss://ws.playkindo.dev
 2. Phone joins from QR or `/join/<ROOM>`.
 3. Phone user taps `Enable Motion`.
 4. Phone requests motion/orientation permission, attempts wake lock, and starts streaming packets.
-5. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, and Babylon phone orientation.
-6. Desktop can send a vibration command. Unsupported devices flash visually instead.
-7. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
+5. Phone defaults to the `Paddle` grip, meaning landscape/sideways hold with the screen acting as the racket or paddle face.
+6. Tap the phone reset button, or the desktop reset button, while holding the comfortable neutral pose to recenter the preview.
+7. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, and calibrated Babylon phone orientation.
+8. Desktop can send a vibration command. Unsupported devices flash visually instead.
+9. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
 
 ## Environment Variables
 
@@ -201,4 +203,4 @@ pnpm test
 pnpm build
 ```
 
-The test suite covers protocol validation, replay serialization, fixed timestep behavior, bowling recognizer emission, and WebSocket room creation/join/packet relay.
+The test suite covers protocol validation, replay serialization, fixed timestep behavior, orientation calibration, bowling recognizer emission, and WebSocket room creation/join/packet relay.

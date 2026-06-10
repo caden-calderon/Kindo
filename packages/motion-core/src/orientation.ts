@@ -17,6 +17,36 @@ export const normalizeQuaternion = (quat: QuaternionTuple): QuaternionTuple => {
   return [x / length, y / length, z / length, w / length];
 };
 
+export const multiplyQuaternions = (left: QuaternionTuple, right: QuaternionTuple): QuaternionTuple => {
+  const [ax, ay, az, aw] = left;
+  const [bx, by, bz, bw] = right;
+  return normalizeQuaternion([
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ]);
+};
+
+export const conjugateQuaternion = (quat: QuaternionTuple): QuaternionTuple => {
+  const [x, y, z, w] = normalizeQuaternion(quat);
+  return [-x, -y, -z, w];
+};
+
+export const invertQuaternion = (quat: QuaternionTuple): QuaternionTuple => conjugateQuaternion(quat);
+
+export const axisAngleToQuaternion = (axis: Vec3, angleRadians: number): QuaternionTuple => {
+  const [x, y, z] = axis;
+  const length = Math.hypot(x, y, z);
+  if (length === 0) {
+    return identityQuaternion();
+  }
+
+  const halfAngle = angleRadians * 0.5;
+  const scale = Math.sin(halfAngle) / length;
+  return normalizeQuaternion([x * scale, y * scale, z * scale, Math.cos(halfAngle)]);
+};
+
 export const eulerDegreesToQuaternion = (euler: Vec3): QuaternionTuple => {
   const [yawDeg, pitchDeg, rollDeg] = euler;
   const yaw = degreesToRadians(yawDeg);
@@ -38,11 +68,31 @@ export const eulerDegreesToQuaternion = (euler: Vec3): QuaternionTuple => {
   ]);
 };
 
+export const deviceOrientationEulerToQuaternion = (alpha = 0, beta = 0, gamma = 0): QuaternionTuple => {
+  const x = degreesToRadians(beta);
+  const y = degreesToRadians(alpha);
+  const z = degreesToRadians(-gamma);
+
+  const c1 = Math.cos(x * 0.5);
+  const c2 = Math.cos(y * 0.5);
+  const c3 = Math.cos(z * 0.5);
+  const s1 = Math.sin(x * 0.5);
+  const s2 = Math.sin(y * 0.5);
+  const s3 = Math.sin(z * 0.5);
+
+  return normalizeQuaternion([
+    s1 * c2 * c3 + c1 * s2 * s3,
+    c1 * s2 * c3 - s1 * c2 * s3,
+    c1 * c2 * s3 - s1 * s2 * c3,
+    c1 * c2 * c3 + s1 * s2 * s3,
+  ]);
+};
+
 export const deviceOrientationToQuaternion = (alpha = 0, beta = 0, gamma = 0): QuaternionTuple => {
   // Browser DeviceOrientation gives alpha/beta/gamma in a Z-X'-Y'' convention.
-  // Stage 0 keeps this as an approximate renderer-neutral preview mapping; calibration will own
-  // true grip/frame correction once real device traces exist.
-  return eulerDegreesToQuaternion([alpha, beta, -gamma]);
+  // This matches the common Y-X-Z browser control mapping while keeping renderer-specific
+  // mesh alignment in calibration/Babylon layers.
+  return deviceOrientationEulerToQuaternion(alpha, beta, gamma);
 };
 
 export const magnitude3 = (value: Vec3 | undefined): number => {

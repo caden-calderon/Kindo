@@ -1,6 +1,13 @@
+import {
+  applyCalibrationSample,
+  createPlayerCalibration,
+  setGrip,
+  setHandedness,
+  type PlayerCalibration,
+} from "@kindo/calibration";
 import { createMotionRecording, finishRecording, ReplayPlayer, serializeRecordingJson, type MotionRecording } from "@kindo/replay";
 import { BowlingThrowRecognizer, type RecognizerDebugState } from "@kindo/recognizers";
-import { motionFrameFromRawSample, MotionQualityTracker, rawSampleFromPacket } from "@kindo/motion-core";
+import { motionFrameFromRawSample, MotionQualityTracker, rawSampleFromPacket, type RawMotionSample } from "@kindo/motion-core";
 import type { ControllerCommand, ControllerPacket, KindoMessage, MotionIntent, PlayerSummary } from "@kindo/protocol";
 import { KindoSocketClient, type TransportStatus } from "@kindo/transport";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,6 +20,7 @@ export type ControllerRuntimeState = {
   packetRateHz: number;
   lastPacketReceivedAtMs: number | undefined;
   debug: RecognizerDebugState | undefined;
+  calibration: PlayerCalibration | undefined;
 };
 
 export type RecordingState = {
@@ -28,9 +36,11 @@ export type UseKindoRoomResult = {
   clientId: string | undefined;
   controllers: ControllerRuntimeState[];
   activePacket: ControllerPacket | undefined;
+  activeCalibration: PlayerCalibration | undefined;
   intents: MotionIntent[];
   recording: RecordingState;
   sendVibrate(playerId?: string): void;
+  resetOrientation(playerId?: string): void;
   startRecording(playerId: string): void;
   stopRecording(): void;
   downloadLastRecording(): void;
@@ -54,6 +64,8 @@ export const useKindoRoom = (): UseKindoRoomResult => {
   const statsRef = useRef(new Map<string, { firstAt: number; lastAt: number; count: number }>());
   const qualityRef = useRef(new Map<string, MotionQualityTracker>());
   const recognizersRef = useRef(new Map<string, BowlingThrowRecognizer>());
+  const calibrationsRef = useRef(new Map<string, PlayerCalibration>());
+  const neutralRequestIdsRef = useRef(new Map<string, number>());
   const recordingRef = useRef<MotionRecording | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
 
@@ -67,6 +79,7 @@ export const useKindoRoom = (): UseKindoRoomResult => {
     const qualityTracker = qualityRef.current.get(packet.playerId) ?? new MotionQualityTracker();
     qualityRef.current.set(packet.playerId, qualityTracker);
     const sample = rawSampleFromPacket(packet);
+    const calibration = updateCalibrationFromPacket(calibrationsRef.current, neutralRequestIdsRef.current, packet, sample);
     const quality = qualityTracker.update(sample);
     const frame = motionFrameFromRawSample(sample, quality);
 
@@ -108,6 +121,7 @@ export const useKindoRoom = (): UseKindoRoomResult => {
         packetRateHz: stats.count / elapsedSeconds,
         lastPacketReceivedAtMs: receivedAt,
         debug: recognizer.getDebugState(),
+        calibration,
       });
       return next;
     });
@@ -152,6 +166,33 @@ export const useKindoRoom = (): UseKindoRoomResult => {
     }
     sendControllerCommand(clientRef.current, roomId, { type: "vibrate", pattern: [45, 35, 70] }, playerId);
   }, [roomId]);
+
+  const resetOrientation = useCallback((playerId?: string) => {
+    setControllers((current) => {
+      const targetPlayerId = playerId ?? current.values().next().value?.summary.playerId;
+      if (!targetPlayerId) {
+        return current;
+      }
+
+      const controller = current.get(targetPlayerId);
+      if (!controller?.lastPacket) {
+        return current;
+      }
+
+      const sample = rawSampleFromPacket(controller.lastPacket);
+      if (!sample.orientation) {
+        return current;
+      }
+
+      const calibration = applyNeutralSample(calibrationsRef.current, controller.lastPacket, sample);
+      const next = new Map(current);
+      next.set(targetPlayerId, {
+        ...controller,
+        calibration,
+      });
+      return next;
+    });
+  }, []);
 
   const stopRecording = useCallback(() => {
     const activeRecording = recordingRef.current;
@@ -214,9 +255,11 @@ export const useKindoRoom = (): UseKindoRoomResult => {
     clientId,
     controllers: [...controllers.values()],
     activePacket: [...controllers.values()].find((controller) => controller.lastPacket)?.lastPacket,
+    activeCalibration: [...controllers.values()].find((controller) => controller.lastPacket)?.calibration,
     intents,
     recording,
     sendVibrate,
+    resetOrientation,
     startRecording,
     stopRecording,
     downloadLastRecording,
@@ -249,6 +292,7 @@ const handleMessage = (message: KindoMessage, handlers: MessageHandlers): void =
             packetRateHz: existing?.packetRateHz ?? 0,
             lastPacketReceivedAtMs: existing?.lastPacketReceivedAtMs,
             debug: existing?.debug,
+            calibration: existing?.calibration,
           });
         }
         return next;
@@ -268,6 +312,52 @@ const handleMessage = (message: KindoMessage, handlers: MessageHandlers): void =
     case "pong":
       return;
   }
+};
+
+const updateCalibrationFromPacket = (
+  calibrations: Map<string, PlayerCalibration>,
+  neutralRequestIds: Map<string, number>,
+  packet: ControllerPacket,
+  sample: RawMotionSample,
+): PlayerCalibration => {
+  let calibration =
+    calibrations.get(packet.playerId) ??
+    createPlayerCalibration(packet.playerId, {
+      handedness: packet.control.handedness,
+      grip: packet.control.grip,
+    });
+
+  if (calibration.handedness !== packet.control.handedness) {
+    calibration = setHandedness(calibration, packet.control.handedness);
+  }
+  if (calibration.grip !== packet.control.grip) {
+    calibration = setGrip(calibration, packet.control.grip);
+  }
+
+  const neutralPoseRequestId = packet.control.calibration?.neutralPoseRequestId;
+  if (neutralPoseRequestId !== undefined && neutralPoseRequestId !== neutralRequestIds.get(packet.playerId) && sample.orientation) {
+    calibration = applyCalibrationSample(calibration, "neutral_pose", sample);
+    neutralRequestIds.set(packet.playerId, neutralPoseRequestId);
+  }
+
+  calibrations.set(packet.playerId, calibration);
+  return calibration;
+};
+
+const applyNeutralSample = (
+  calibrations: Map<string, PlayerCalibration>,
+  packet: ControllerPacket,
+  sample: RawMotionSample,
+): PlayerCalibration => {
+  const current =
+    calibrations.get(packet.playerId) ??
+    createPlayerCalibration(packet.playerId, {
+      handedness: packet.control.handedness,
+      grip: packet.control.grip,
+    });
+  const updated = applyCalibrationSample(current, "neutral_pose", sample);
+  calibrations.set(packet.playerId, updated);
+  return updated;
 };
 
 const sendControllerCommand = (

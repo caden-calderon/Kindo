@@ -59,6 +59,11 @@ export const ControllerPacketSchema = z.object({
     grip: GripModeSchema,
     safetyMode: SafetyModeSchema,
     state: ControllerStateSchema,
+    calibration: z
+      .object({
+        neutralPoseRequestId: z.number().int().nonnegative().optional(),
+      })
+      .optional(),
   }),
 });
 export type ControllerPacket = z.infer<typeof ControllerPacketSchema>;

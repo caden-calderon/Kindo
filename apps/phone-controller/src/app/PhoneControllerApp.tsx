@@ -38,11 +38,11 @@ export function PhoneControllerApp() {
   const [permission, setPermission] = useState<MotionPermissionResult | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [handedness, setHandedness] = useState<Handedness>("right");
-  const [grip, setGrip] = useState<GripMode>("portrait");
+  const [grip, setGrip] = useState<GripMode>("landscape");
   const [seq, setSeq] = useState(0);
+  const [neutralRequestId, setNeutralRequestId] = useState(0);
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState(false);
-  const [neutralSet, setNeutralSet] = useState(false);
 
   const clientRef = useRef<KindoSocketClient | null>(null);
   const samplerRef = useRef(new BrowserSensorSampler());
@@ -50,6 +50,7 @@ export function PhoneControllerApp() {
   const touchRef = useRef<TouchState>({ primary: false, secondary: false });
   const lastSentAtRef = useRef<number | null>(null);
   const seqRef = useRef(0);
+  const neutralRequestIdRef = useRef(0);
 
   const canStream = Boolean(joined && enabled);
 
@@ -124,7 +125,7 @@ export function PhoneControllerApp() {
         handedness,
         grip,
         active: touchRef.current.primary,
-        neutralSet,
+        neutralRequestId: neutralRequestIdRef.current,
         snapshot: samplerRef.current.getSnapshot(),
       };
       if (lastSentAt !== null) {
@@ -142,7 +143,7 @@ export function PhoneControllerApp() {
     }, 1000 / 60);
 
     return () => window.clearInterval(interval);
-  }, [canStream, caps, grip, handedness, joined, neutralSet]);
+  }, [canStream, caps, grip, handedness, joined]);
 
   const enableMotion = useCallback(async () => {
     const permissionResult = await requestMotionPermissions();
@@ -167,6 +168,13 @@ export function PhoneControllerApp() {
     if (primary) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
+  }, []);
+
+  const requestNeutralPose = useCallback(() => {
+    const nextRequestId = neutralRequestIdRef.current + 1;
+    neutralRequestIdRef.current = nextRequestId;
+    setNeutralRequestId(nextRequestId);
+    setMessage("Neutral reset sent");
   }, []);
 
   return (
@@ -224,7 +232,7 @@ export function PhoneControllerApp() {
               </button>
               <button type="button" className={grip === "landscape" ? "selected" : ""} onClick={() => setGrip("landscape")}>
                 <RotateCcw size={18} />
-                <span>Wide</span>
+                <span>Paddle</span>
               </button>
             </div>
           </section>
@@ -253,7 +261,7 @@ export function PhoneControllerApp() {
           )}
 
           <section className="bottom-bar">
-            <button type="button" title="Set neutral pose" disabled={!enabled} onClick={() => setNeutralSet(true)}>
+            <button type="button" title="Reset orientation" disabled={!enabled} onClick={requestNeutralPose}>
               <RotateCcw size={18} />
             </button>
             <dl>
@@ -271,7 +279,7 @@ export function PhoneControllerApp() {
               </div>
               <div>
                 <dt>Neutral</dt>
-                <dd>{neutralSet ? "set" : "open"}</dd>
+                <dd>{neutralRequestId > 0 ? "set" : "open"}</dd>
               </div>
             </dl>
           </section>
@@ -347,7 +355,7 @@ const createPacket = (input: {
   handedness: Handedness;
   grip: GripMode;
   active: boolean;
-  neutralSet: boolean;
+  neutralRequestId: number;
   snapshot: ReturnType<BrowserSensorSampler["getSnapshot"]>;
 }): ControllerPacket => {
   const packet: ControllerPacket = {
@@ -367,12 +375,17 @@ const createPacket = (input: {
       handedness: input.handedness,
       grip: input.grip,
       safetyMode: "normal",
-      state: input.active ? "active" : input.neutralSet ? "ready" : "calibrating",
+      state: input.active ? "active" : input.neutralRequestId > 0 ? "ready" : "calibrating",
     },
   };
 
   if (input.dtMs !== undefined) {
     packet.dtMs = input.dtMs;
+  }
+  if (input.neutralRequestId > 0) {
+    packet.control.calibration = {
+      neutralPoseRequestId: input.neutralRequestId,
+    };
   }
   if (input.snapshot.orientation) {
     packet.pose = input.snapshot.orientation;

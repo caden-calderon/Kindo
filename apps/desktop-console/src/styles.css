@@ -186,6 +186,11 @@ dt {
   background: rgba(10, 13, 11, 0.74);
 }
 
+.preview-overlay button {
+  min-width: 32px;
+  min-height: 32px;
+}
+
 .debug-panel,
 .packet-panel,
 .intent-panel {
@@ -241,7 +246,7 @@ dt {
 }
 
 .packet-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 dd {

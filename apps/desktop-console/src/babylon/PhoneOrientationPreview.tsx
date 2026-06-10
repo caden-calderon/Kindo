@@ -7,15 +7,17 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js"
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import { Scene } from "@babylonjs/core/scene.js";
-import { deviceOrientationToQuaternion, identityQuaternion, type QuaternionTuple } from "@kindo/motion-core";
+import { calibrateOrientation, type PlayerCalibration } from "@kindo/calibration";
+import { identityQuaternion, rawSampleFromPacket, type QuaternionTuple } from "@kindo/motion-core";
 import type { ControllerPacket } from "@kindo/protocol";
 import { useEffect, useRef } from "react";
 
 type PhoneOrientationPreviewProps = {
   packet: ControllerPacket | undefined;
+  calibration: PlayerCalibration | undefined;
 };
 
-export function PhoneOrientationPreview({ packet }: PhoneOrientationPreviewProps) {
+export function PhoneOrientationPreview({ calibration, packet }: PhoneOrientationPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const phoneRootRef = useRef<TransformNode | null>(null);
 
@@ -83,9 +85,9 @@ export function PhoneOrientationPreview({ packet }: PhoneOrientationPreviewProps
       return;
     }
 
-    const quat = getPacketQuaternion(packet);
+    const quat = getPacketQuaternion(packet, calibration);
     phoneRoot.rotationQuaternion = new Quaternion(quat[0], quat[1], quat[2], quat[3]);
-  }, [packet]);
+  }, [calibration, packet]);
 
   return <canvas ref={canvasRef} className="orientation-canvas" aria-label="Live phone orientation preview" />;
 }
@@ -103,9 +105,9 @@ const createAxisLine = (
   line.parent = parent;
 };
 
-const getPacketQuaternion = (packet: ControllerPacket | undefined): QuaternionTuple => {
+const getPacketQuaternion = (packet: ControllerPacket | undefined, calibration: PlayerCalibration | undefined): QuaternionTuple => {
   if (!packet?.pose) {
-    return identityQuaternion();
+    return calibration ? calibrateOrientation(undefined, calibration).quaternion : identityQuaternion();
   }
-  return deviceOrientationToQuaternion(packet.pose.alpha, packet.pose.beta, packet.pose.gamma);
+  return calibrateOrientation(rawSampleFromPacket(packet), calibration).quaternion;
 };
