@@ -85,8 +85,10 @@ export function PhoneOrientationPreview({ calibration, packet }: PhoneOrientatio
       return;
     }
 
-    const quat = getPacketQuaternion(packet, calibration);
+    const previewPose = getPacketPreviewPose(packet, calibration);
+    const quat = previewPose.quaternion;
     phoneRoot.rotationQuaternion = new Quaternion(quat[0], quat[1], quat[2], quat[3]);
+    phoneRoot.position = toBabylonPosition(previewPose.positionM);
   }, [calibration, packet]);
 
   return <canvas ref={canvasRef} className="orientation-canvas" aria-label="Live phone orientation preview" />;
@@ -105,9 +107,40 @@ const createAxisLine = (
   line.parent = parent;
 };
 
-const getPacketQuaternion = (packet: ControllerPacket | undefined, calibration: PlayerCalibration | undefined): QuaternionTuple => {
-  if (!packet?.pose) {
-    return calibration ? calibrateOrientation(undefined, calibration).quaternion : identityQuaternion();
-  }
-  return calibrateOrientation(rawSampleFromPacket(packet), calibration).quaternion;
+type PreviewPose = {
+  quaternion: QuaternionTuple;
+  positionM?: [number, number, number];
 };
+
+const getPacketPreviewPose = (packet: ControllerPacket | undefined, calibration: PlayerCalibration | undefined): PreviewPose => {
+  if (packet?.pose6d && packet.pose6d.trackingState !== "lost" && packet.pose6d.trackingState !== "unavailable") {
+    return {
+      quaternion: packet.pose6d.quaternion,
+      positionM: packet.pose6d.positionM,
+    };
+  }
+
+  if (!packet?.pose) {
+    return {
+      quaternion: calibration ? calibrateOrientation(undefined, calibration).quaternion : identityQuaternion(),
+    };
+  }
+  return {
+    quaternion: calibrateOrientation(rawSampleFromPacket(packet), calibration).quaternion,
+  };
+};
+
+const toBabylonPosition = (position: [number, number, number] | undefined): Vector3 => {
+  if (!position) {
+    return Vector3.Zero();
+  }
+
+  const scale = 1.25;
+  return new Vector3(
+    clamp(position[0] * scale, -1.8, 1.8),
+    clamp(position[1] * scale, -1.2, 1.8),
+    clamp(-position[2] * scale, -1.8, 1.8),
+  );
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));

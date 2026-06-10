@@ -12,6 +12,8 @@ apps/
   phone-controller/     Vite + React phone controller
 services/
   room-server/          Node ws room server
+native/
+  ios-controller/       SwiftUI + ARKit native iPhone 6DOF controller scaffold
 packages/
   protocol/             Zod-validated JSON protocol and intent types
   transport/            Browser WebSocket client helpers
@@ -31,6 +33,7 @@ Requirements:
 
 - Node.js 20+
 - pnpm 10+
+- macOS + Xcode 16+ for the native iOS controller
 
 ```bash
 pnpm install
@@ -104,6 +107,45 @@ The current web controller attempts WebXR `immersive-ar` tracking from the `Enab
 For iPhone, the production-quality 6DOF route is likely a thin native ARKit controller app or wrapper that streams the same `pose6d` shape over the room WebSocket. iOS Safari does not currently give us dependable browser access to ARKit VIO.
 
 The reset button now also rebases the spatial origin when a 6DOF pose is active. Gameplay calibration should still happen in the real play grip, not flat on a table.
+
+## Native iOS ARKit Controller
+
+The native iPhone scaffold lives in `native/ios-controller`. It is intentionally thin: room join, ARKit world tracking, origin reset, hold/active touch state, and WebSocket packet streaming. It sends the same `controller_packet` shape as the web controller, with:
+
+```txt
+pose6d.source          arkit
+pose6d.referenceSpace  kindo-room
+caps.camera            true
+caps.vio               true
+control.grip           landscape
+```
+
+Generate and run the Xcode project on macOS:
+
+```bash
+cd native/ios-controller
+brew install xcodegen
+xcodegen generate
+open KindoIOSController.xcodeproj
+```
+
+In Xcode:
+
+1. Select the `KindoIOSController` app target.
+2. Set your signing team and bundle identifier if Xcode asks.
+3. Run on a real iPhone. The simulator is not useful for ARKit world tracking.
+4. Open the desktop console, copy the room code into the native app, and join.
+5. Tap `Start ARKit`, hold the phone in the sideways paddle grip, then tap reset to make that pose the 6DOF origin.
+
+The native app defaults to the deployed edge Worker:
+
+```txt
+wss://kindo-room-worker.caden-calderon03.workers.dev
+```
+
+You can change the WebSocket field in-app to `wss://ws.playkindo.dev` after that hostname is behaving cleanly, or to a local/tunnel URL during development.
+
+Shake to Undo is disabled inside the native app through UIKit's `applicationSupportsShakeToEdit` hook. The browser controller can only mitigate Shake to Undo; the native app can actually opt out.
 
 ## iOS Shake To Undo
 
@@ -198,10 +240,11 @@ VITE_ROOM_SERVER_URL=wss://ws.playkindo.dev
 4. Phone requests motion/orientation permission, attempts wake lock, and starts streaming packets.
 5. Phone defaults to the `Paddle` grip, meaning landscape/sideways hold with the screen acting as the racket or paddle face.
 6. The phone attempts 6DOF/VIO tracking where browser support exists and otherwise reports IMU fallback.
-7. Tap the phone reset button, or the desktop reset button, while holding the comfortable neutral pose to recenter the preview and spatial origin.
-8. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, tracking state, and calibrated Babylon phone orientation.
-9. Desktop can send a vibration command. Unsupported devices flash visually instead.
-10. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
+7. Native iPhone testing should use the ARKit controller for true 6DOF. Tap reset while holding the comfortable sideways paddle pose to recenter both orientation and spatial origin.
+8. Tap the web phone reset button, or the desktop reset button, while holding the comfortable neutral pose to recenter the browser IMU preview.
+9. Desktop shows the connected controller, raw sensor values, packet rate, recognizer phase, tracking state, and calibrated Babylon phone orientation/spatial preview.
+10. Desktop can send a vibration command. Unsupported devices flash visually instead.
+11. Desktop can record five seconds of packets, replay them through the same ingestion path, and download JSON.
 
 ## Environment Variables
 

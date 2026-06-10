@@ -1,0 +1,46 @@
+{
+  "type": "controller_packet",
+  "roomId": "9DRRR9",
+  "playerId": "p_1",
+  "packet": {
+    "roomId": "9DRRR9",
+    "playerId": "p_1",
+    "seq": 12,
+    "sentAtMs": 12345.6,
+    "unixAtMs": 1760000000000,
+    "dtMs": 16.7,
+    "caps": {
+      "motion": true,
+      "orientation": true,
+      "vibration": true,
+      "wakeLock": false,
+      "genericSensor": false,
+      "camera": true,
+      "webxr": false,
+      "vio": true
+    },
+    "pose6d": {
+      "positionM": [0.12, 0.8, -0.31],
+      "quaternion": [0, 0, 0, 1],
+      "source": "arkit",
+      "trackingState": "normal",
+      "confidence": 1,
+      "referenceSpace": "kindo-room",
+      "frameId": 99
+    },
+    "touch": {
+      "primary": false,
+      "secondary": false
+    },
+    "control": {
+      "handedness": "right",
+      "grip": "landscape",
+      "safetyMode": "normal",
+      "state": "ready",
+      "calibration": {
+        "neutralPoseRequestId": 2,
+        "spatialOriginRequestId": 2
+      }
+    }
+  }
+}
