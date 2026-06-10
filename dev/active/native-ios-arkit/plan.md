@@ -20,6 +20,7 @@ Add the first native iPhone controller path for true 6DOF tracking. The app shou
 - Send `pose6d.source: "arkit"`, `caps.vio: true`, and omit velocity until we have a measured derivative path.
 - Include an XcodeGen `project.yml` so Caden can generate a real Xcode project on macOS without us committing brittle hand-authored `.xcodeproj` files.
 - Add a GitHub Actions hosted macOS unsigned build workflow so we can catch native compile errors even without a local Mac.
+- Add a Codemagic unsigned workflow because the user created a Codemagic account.
 
 ## Non-Goals
 

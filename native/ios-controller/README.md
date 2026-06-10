@@ -6,6 +6,12 @@ This is the native iPhone controller path for true ARKit 6DOF tracking. It joins
 
 You do not need a personal Mac to check whether this native code compiles. The repo includes `.github/workflows/ios-controller.yml`, which runs on GitHub's hosted macOS runner, generates the Xcode project with XcodeGen, runs the Swift package tests, and builds the iOS app with signing disabled.
 
+The repo also includes a root `codemagic.yaml` with an `iOS Controller unsigned build` workflow. Add the GitHub repo in Codemagic, let it scan the YAML configuration, then run:
+
+```txt
+ios-controller-unsigned
+```
+
 Run it from GitHub:
 
 ```txt
@@ -24,7 +30,7 @@ Apple still requires signing before a native iOS app can run on an iPhone. Witho
 
 For Kindo, Codemagic is likely the lowest-friction no-Mac option because it can connect to the GitHub repo and manage iOS certificates/profiles through App Store Connect.
 
-The GitHub workflow in this repo is intentionally unsigned for now. Once signing credentials exist, we can add a separate signed archive/TestFlight workflow without putting secrets in the repository.
+The GitHub and Codemagic workflows in this repo are intentionally unsigned for now. Once signing credentials exist, we can add a separate signed archive/TestFlight workflow without putting secrets in the repository.
 
 ## Local Mac Workflow
 

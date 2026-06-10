@@ -8,4 +8,5 @@
 - [x] Add protocol fixture parsed by TypeScript tests.
 - [x] Update README with macOS/Xcode/iPhone run steps.
 - [x] Add no-Mac GitHub Actions unsigned iOS build workflow.
+- [x] Add Codemagic unsigned iOS build workflow.
 - [x] Run available repo checks.

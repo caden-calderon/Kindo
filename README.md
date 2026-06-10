@@ -147,7 +147,7 @@ You can change the WebSocket field in-app to `wss://ws.playkindo.dev` after that
 
 Shake to Undo is disabled inside the native app through UIKit's `applicationSupportsShakeToEdit` hook. The browser controller can only mitigate Shake to Undo; the native app can actually opt out.
 
-If you do not have a Mac, use the `iOS Controller` GitHub Actions workflow to generate and compile the app on a hosted macOS runner. That workflow is an unsigned build check only; installing on a real iPhone still needs Apple signing, normally through TestFlight and an Apple Developer Program account. See `native/ios-controller/README.md` for the no-Mac path.
+If you do not have a Mac, use the `iOS Controller` GitHub Actions workflow or Codemagic's `ios-controller-unsigned` workflow to generate and compile the app on a hosted macOS runner. Those workflows are unsigned build checks only; installing on a real iPhone through TestFlight still needs Apple signing/App Store Connect access. See `native/ios-controller/README.md` for the no-Mac path.
 
 ## iOS Shake To Undo
 
